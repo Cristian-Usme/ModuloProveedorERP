@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: gestion_proveedores_db
+    environment:
+      POSTGRES_DB: gestion_proveedores
+      POSTGRES_USER: upb_user
+      POSTGRES_PASSWORD: upb_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U upb_user -d gestion_proveedores"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: gestion_proveedores_backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gestion_proveedores
+      SPRING_DATASOURCE_USERNAME: upb_user
+      SPRING_DATASOURCE_PASSWORD: upb_pass_2026
+      JWT_SECRET: c2lzdGVtYUVtcHJlc2FyaWFsVVBCMjAyNlNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9u
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
