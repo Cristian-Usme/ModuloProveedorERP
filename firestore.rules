@@ -1,0 +1,171 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    function userCompanyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+    }
+    
+    function isSuperAdmin() {
+      return getUserRole() == 'super_admin';
+    }
+    
+    function isAdmin() {
+      return getUserRole() in ['super_admin', 'admin'];
+    }
+    
+    function isFinance() {
+      return getUserRole() in ['super_admin', 'admin', 'finance'];
+    }
+    
+    function isSales() {
+      return getUserRole() in ['super_admin', 'admin', 'sales'];
+    }
+    
+    function isWarehouse() {
+      return getUserRole() in ['super_admin', 'admin', 'warehouse'];
+    }
+    
+    function isOperator() {
+      return getUserRole() in ['super_admin', 'admin', 'operator', 'warehouse'];
+    }
+    
+    function sameCompany(companyId) {
+      return userCompanyId() == companyId;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Users & Profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSuperAdmin();
+      allow update, delete: if isSuperAdmin() || isOwner(userId);
+    }
+    
+    // Companies (Multi-tenant)
+    match /companies/{companyId} {
+      allow read: if isSignedIn() && sameCompany(companyId);
+      allow create: if isSuperAdmin();
+      allow update, delete: if isSuperAdmin() || (isAdmin() && sameCompany(companyId));
+    }
+    
+    // Customers
+    match /customers/{customerId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update, delete: if isSignedIn() && (isSales() || isAdmin()) && sameCompany(resource.data.companyId);
+    }
+    
+    // Suppliers
+    match /suppliers/{supplierId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update, delete: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(resource.data.companyId);
+    }
+    
+    // Products
+    match /products/{productId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(resource.data.companyId);
+      allow delete: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId);
+    }
+    
+    // Warehouses
+    match /warehouses/{warehouseId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create, update, delete: if isSignedIn() && isWarehouse() && sameCompany(resource.data.companyId);
+    }
+    
+    // Inventory Locations
+    match /inventory_locations/{locationId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create, update: if isSignedIn() && (isWarehouse() || isOperator()) && sameCompany(request.resource.data.companyId);
+      allow delete: if isSignedIn() && isWarehouse() && sameCompany(resource.data.companyId);
+    }
+    
+    // Stock Movements
+    match /stock_movements/{movementId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isWarehouse() || isOperator()) && sameCompany(request.resource.data.companyId);
+      allow update, delete: if isSignedIn() && isWarehouse() && sameCompany(resource.data.companyId);
+    }
+    
+    // Sales Orders
+    match /sales_orders/{orderId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && (isSales() || isAdmin()) && sameCompany(resource.data.companyId);
+      allow delete: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId) && resource.data.status == 'pending';
+    }
+    
+    // Invoices
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isFinance() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && (isSales() || isFinance() || isAdmin()) && sameCompany(resource.data.companyId);
+      allow delete: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId) && resource.data.status == 'draft';
+    }
+    
+    // Purchase Orders
+    match /purchase_orders/{poId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && (isSales() || isWarehouse() || isAdmin()) && sameCompany(resource.data.companyId);
+      allow delete: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId) && resource.data.status == 'pending';
+    }
+    
+    // Goods Receipts
+    match /goods_receipts/{receiptId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create, update: if isSignedIn() && (isWarehouse() || isOperator()) && sameCompany(request.resource.data.companyId);
+      allow delete: if isSignedIn() && isWarehouse() && sameCompany(resource.data.companyId) && resource.data.status in ['pending', 'received'];
+    }
+    
+    // Payments
+    match /payments/{paymentId} {
+      allow read: if isSignedIn() && sameCompany(resource.data.companyId);
+      allow create: if isSignedIn() && isFinance() && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && isFinance() && sameCompany(resource.data.companyId) && resource.data.status == 'pending';
+      allow delete: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId) && resource.data.status == 'pending';
+    }
+    
+    // Support Tickets (Admin Dashboard)
+    match /support_tickets/{ticketId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.createdBy == request.auth.uid);
+      allow create: if isSignedIn() && sameCompany(request.resource.data.companyId);
+      allow update: if isSignedIn() && (isAdmin() || resource.data.createdBy == request.auth.uid);
+      allow delete: if isSignedIn() && isAdmin();
+    }
+    
+    // Audit Logs (Read-only for admins)
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn() && isAdmin() && sameCompany(resource.data.companyId);
+      allow write: if false;
+    }
+    
+    // System Notifications
+    match /system_notifications/{notifId} {
+      allow read, update: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      allow create: if false;
+    }
+    
+    // Catch-all deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
