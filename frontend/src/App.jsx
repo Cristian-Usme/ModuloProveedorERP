@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard'
 import Proveedores from './pages/Proveedores'
 import Productos from './pages/Productos'
 import Ordenes from './pages/Ordenes'
+import SupplyOSPro from './pages/SupplyOSPro'
+import SimpleERP from './pages/SimpleERP'
 
 export default function App() {
   return (
@@ -14,6 +16,8 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/simple" element={<SimpleERP />} />
+          <Route path="/erp" element={<SupplyOSPro />} />
           <Route
             path="/"
             element={

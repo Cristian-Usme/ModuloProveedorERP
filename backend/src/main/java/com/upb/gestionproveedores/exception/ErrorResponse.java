@@ -1,5 +1,6 @@
 package com.upb.gestionproveedores.exception;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,7 +15,8 @@ public class ErrorResponse {
     private String error;
     private String message;
     private String path;
+    private Long timestamp;
     @Builder.Default
-    private LocalDateTime timestamp = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
     private List<String> details;
 }

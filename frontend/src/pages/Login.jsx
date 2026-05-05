@@ -57,11 +57,29 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-xs text-gray-500 space-y-1">
-            <p className="font-medium text-gray-700 mb-2">Usuarios de prueba:</p>
-            <p>admin@upb.edu.co — Test1234!</p>
-            <p>comprador@upb.edu.co — Test1234!</p>
-            <p>consulta@upb.edu.co — Test1234!</p>
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 text-sm text-gray-700 space-y-2">
+            <p className="font-bold text-blue-900 mb-3">📌 CREDENCIALES DE PRUEBA:</p>
+            
+            <div className="bg-white p-3 rounded border-l-4 border-indigo-500">
+              <p className="font-semibold text-gray-900">👨‍💼 Admin</p>
+              <p>📧 admin@upb.edu.co</p>
+              <p>🔐 Test1234!</p>
+              <p className="text-xs text-gray-500 mt-1">Permisos: Crear, editar, eliminar todo</p>
+            </div>
+
+            <div className="bg-white p-3 rounded border-l-4 border-purple-500">
+              <p className="font-semibold text-gray-900">🛒 Comprador</p>
+              <p>📧 comprador@upb.edu.co</p>
+              <p>🔐 Test1234!</p>
+              <p className="text-xs text-gray-500 mt-1">Permisos: Ver y crear órdenes</p>
+            </div>
+
+            <div className="bg-white p-3 rounded border-l-4 border-green-500">
+              <p className="font-semibold text-gray-900">👁️ Consulta</p>
+              <p>📧 consulta@upb.edu.co</p>
+              <p>🔐 Test1234!</p>
+              <p className="text-xs text-gray-500 mt-1">Permisos: Solo visualizar</p>
+            </div>
           </div>
         </div>
       </div>

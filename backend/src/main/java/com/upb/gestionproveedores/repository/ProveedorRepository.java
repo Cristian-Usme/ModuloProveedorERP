@@ -12,8 +12,10 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
 
     boolean existsByRucNit(String rucNit);
 
-    @Query("SELECT p FROM Proveedor p WHERE " +
-           "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(p.rucNit) LIKE LOWER(CONCAT('%', :search, '%')))")
+    @Query(value = "SELECT * FROM proveedores p WHERE p.activo = true AND " +
+           "(COALESCE(CAST(:search AS VARCHAR), '') = '' OR " +
+           "LOWER(p.nombre) LIKE LOWER('%' || :search || '%') OR " +
+           "LOWER(p.ruc_nit) LIKE LOWER('%' || :search || '%')) " +
+           "ORDER BY p.creado_en DESC", nativeQuery = true)
     Page<Proveedor> findBySearch(String search, Pageable pageable);
 }

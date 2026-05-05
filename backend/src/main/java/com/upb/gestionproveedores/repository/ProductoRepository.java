@@ -10,7 +10,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
-    @Query("SELECT p FROM Producto p WHERE p.activo = true AND " +
-           "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')))")
+    @Query(value = "SELECT * FROM productos p WHERE p.activo = true AND " +
+           "(COALESCE(CAST(:search AS VARCHAR), '') = '' OR " +
+           "LOWER(p.nombre) LIKE LOWER('%' || :search || '%')) " +
+           "ORDER BY p.creado_en DESC", nativeQuery = true)
     Page<Producto> findBySearch(String search, Pageable pageable);
 }

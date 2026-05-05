@@ -1,8 +1,9 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: gestion_proveedores_db
     environment:
       POSTGRES_DB: gestion_proveedores
@@ -17,21 +18,40 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - erp_network
+    restart: unless-stopped
 
+  # Spring Boot Backend
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: gestion_proveedores_backend
-    ports:
-      - "8080:8080"
     environment:
+      ENVIRONMENT: dev
+      SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/gestion_proveedores
       SPRING_DATASOURCE_USERNAME: upb_user
       SPRING_DATASOURCE_PASSWORD: upb_pass_2026
       JWT_SECRET: c2lzdGVtYUVtcHJlc2FyaWFsVVBCMjAyNlNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9u
       JWT_EXPIRATION: 86400000
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - erp_network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  erp_network:
+    driver: bridge
+
