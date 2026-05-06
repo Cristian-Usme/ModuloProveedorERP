@@ -5,15 +5,15 @@ INSERT INTO roles (nombre) VALUES ('ADMIN'), ('COMPRADOR'), ('CONSULTA');
 -- password: Test1234! (BCrypt hash)
 INSERT INTO usuarios (nombre, email, password)
 VALUES ('Administrador', 'admin@upb.edu.co',
-        '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.ucrm50pCXi');
+        '$2b$10$7ZUi6eKBJxlFAg0ZwVEZb.aOlGXcZEP8qbnswLuQtF1JOGH7KRjS2');
 
 INSERT INTO usuarios (nombre, email, password)
 VALUES ('Juan Comprador', 'comprador@upb.edu.co',
-        '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.ucrm50pCXi');
+        '$2b$10$7ZUi6eKBJxlFAg0ZwVEZb.aOlGXcZEP8qbnswLuQtF1JOGH7KRjS2');
 
 INSERT INTO usuarios (nombre, email, password)
 VALUES ('Ana Consulta', 'consulta@upb.edu.co',
-        '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.ucrm50pCXi');
+        '$2b$10$7ZUi6eKBJxlFAg0ZwVEZb.aOlGXcZEP8qbnswLuQtF1JOGH7KRjS2');
 
 -- Asignación de roles a usuarios
 INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (1, 1);

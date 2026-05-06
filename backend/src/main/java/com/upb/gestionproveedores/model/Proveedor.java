@@ -2,14 +2,14 @@ package com.upb.gestionproveedores.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "proveedores")
-@SQLRestriction("activo = true")
+@Where(clause = "activo = true")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
