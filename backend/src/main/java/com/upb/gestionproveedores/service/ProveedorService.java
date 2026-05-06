@@ -7,6 +7,9 @@ import com.upb.gestionproveedores.exception.ResourceNotFoundException;
 import com.upb.gestionproveedores.model.Proveedor;
 import com.upb.gestionproveedores.repository.ProveedorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,11 +25,13 @@ public class ProveedorService {
         return proveedorRepository.findBySearch(search, pageable).map(this::toResponse);
     }
 
+    @Cacheable(value = "proveedores", key = "#id")
     public ProveedorResponse obtenerPorId(Long id) {
         return toResponse(findById(id));
     }
 
     @Transactional
+    @CacheEvict(value = "proveedores", allEntries = true)
     public ProveedorResponse crear(ProveedorRequest request) {
         if (proveedorRepository.existsByRucNit(request.getRucNit())) {
             throw new BusinessException("Ya existe un proveedor con RUC/NIT: " + request.getRucNit());
@@ -39,6 +44,7 @@ public class ProveedorService {
     }
 
     @Transactional
+    @CacheEvict(value = "proveedores", allEntries = true)
     public ProveedorResponse actualizar(Long id, ProveedorRequest request) {
         Proveedor proveedor = findById(id);
         proveedor.setNombre(request.getNombre());
@@ -49,6 +55,7 @@ public class ProveedorService {
     }
 
     @Transactional
+    @CacheEvict(value = "proveedores", allEntries = true)
     public void eliminar(Long id) {
         Proveedor proveedor = findById(id);
         proveedor.setActivo(false);
