@@ -21,7 +21,7 @@ Este proyecto es un sistema de gestión de proveedores que incluye una aplicaci�
 Para levantar el backend y la base de datos automáticamente, ejecuta:
 
 ```bash
-docker-compose up -d
+sudo docker compose up --build
 ```
 
 El backend estará disponible en `http://localhost:8080` y el Swagger en `http://localhost:8080/swagger-ui.html`.
@@ -40,6 +40,6 @@ El frontend estará disponible en `http://localhost:5173`.
 
 ## Usuarios de Prueba
 
-- **Administrador**: `admin@upb.edu.co` / `Admin2026!`
+- **Administrador**: `admin@upb.edu.co` / `Test1234!`
 - **Comprador**: `comprador@upb.edu.co` / `Test1234!`
 - **Consulta**: `consulta@upb.edu.co` / `Test1234!`
