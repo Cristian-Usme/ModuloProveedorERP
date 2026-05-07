@@ -1,0 +1,69 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestion_proveedores_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gestion_proveedores}
+      POSTGRES_USER: ${POSTGRES_USER:-upb_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-upb_pass_2026}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - erp_network
+    restart: unless-stopped
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gestion_proveedores_backend
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-postgres}:${DB_PORT:-5432}/${POSTGRES_DB:-gestion_proveedores}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-upb_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-upb_pass_2026}
+      JWT_SECRET: ${JWT_SECRET:-c2lzdGVtYUVtcHJlc2FyaWFsVVBCMjAyNlNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9u}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
+      SPRING_FLYWAY_ENABLED: ${SPRING_FLYWAY_ENABLED:-true}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - erp_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health/live > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  erp_network:
+    driver: bridge
