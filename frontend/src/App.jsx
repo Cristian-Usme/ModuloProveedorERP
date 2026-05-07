@@ -12,6 +12,7 @@ const Productos = lazy(() => import('./pages/Productos'))
 const Ordenes = lazy(() => import('./pages/Ordenes'))
 const SupplyOSPro = lazy(() => import('./pages/SupplyOSPro'))
 const SimpleERP = lazy(() => import('./pages/SimpleERP'))
+const Usuarios = lazy(() => import('./pages/Usuarios'))
 
 // Loading component
 function PageLoader() {
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="proveedores" element={<Proveedores />} />
               <Route path="productos" element={<Productos />} />
               <Route path="ordenes" element={<Ordenes />} />
+              <Route path="usuarios" element={<Usuarios />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

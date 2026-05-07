@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Package, ShoppingCart, LogOut, Menu, X, Building2 } from 'lucide-react'
+import { LayoutDashboard, Users, Package, ShoppingCart, LogOut, Menu, X, Building2, UserCog } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const navLinks = [
@@ -22,7 +22,7 @@ function UserAvatar({ nombre }) {
 }
 
 export default function Navbar() {
-  const { auth, logout } = useAuth()
+  const { auth, logout, isAdmin } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -62,6 +62,19 @@ export default function Navbar() {
                   </Link>
                 )
               })}
+              {isAdmin() && (
+                <Link
+                  to="/usuarios"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname.startsWith('/usuarios')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <UserCog size={15} />
+                  Usuarios
+                </Link>
+              )}
             </div>
           </div>
 
@@ -116,6 +129,20 @@ export default function Navbar() {
               </Link>
             )
           })}
+          {isAdmin() && (
+            <Link
+              to="/usuarios"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname.startsWith('/usuarios')
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <UserCog size={16} />
+              Usuarios
+            </Link>
+          )}
           <div className="pt-2 border-t border-gray-100 flex items-center gap-2 px-3 py-2">
             <UserAvatar nombre={auth?.nombre} />
             <div>
