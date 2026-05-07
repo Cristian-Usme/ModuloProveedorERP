@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { Star, Search, Plus, Pencil, Trash2, Award } from 'lucide-react'
+import { Star, Search, Plus, Pencil, Trash2, Award, Loader2 } from 'lucide-react'
 import {
   useProveedores, useCrearProveedor, useActualizarProveedor,
   useEliminarProveedor, useCalificarProveedor,
 } from '../hooks/useProveedores'
 import { useAuth } from '../context/AuthContext'
+import { proveedorService } from '../services/proveedorService'
 import Modal from '../components/ui/Modal'
 import Button from '../components/ui/Button'
 import Pagination from '../components/ui/Pagination'
@@ -40,19 +41,52 @@ export default function Proveedores() {
   const [modalEdit, setModalEdit]     = useState(null)
   const [modalCalif, setModalCalif]   = useState(null)
 
+  // Rating modal state
+  const [loadingCalif, setLoadingCalif]   = useState(false)
+  const [existingCalif, setExistingCalif] = useState(null)
+
   const { data, isLoading } = useProveedores({ page, size: 10, search: search || undefined })
   const crearMut      = useCrearProveedor()
   const actualizarMut = useActualizarProveedor()
   const eliminarMut   = useEliminarProveedor()
   const calificarMut  = useCalificarProveedor()
 
-  const { register: rCalif, handleSubmit: hCalif, reset: resetCalif, watch } = useForm({ defaultValues: { puntuacion: 5 } })
+  const { register: rCalif, handleSubmit: hCalif, reset: resetCalif, watch, setValue } = useForm({
+    defaultValues: { puntuacion: 5, comentario: '' },
+  })
   const puntActual = parseInt(watch('puntuacion') || 5)
+
+  // Fetch existing rating when modal opens
+  const openCalifModal = useCallback(async (proveedor) => {
+    setModalCalif(proveedor)
+    setLoadingCalif(true)
+    setExistingCalif(null)
+
+    try {
+      const existing = await proveedorService.miCalificacion(proveedor.id)
+      setExistingCalif(existing)
+      setValue('puntuacion', existing.puntuacion)
+      setValue('comentario', existing.comentario || '')
+    } catch (err) {
+      // 404 = no existing rating, show fresh form
+      if (err.response?.status === 404) {
+        resetCalif({ puntuacion: 5, comentario: '' })
+      }
+    } finally {
+      setLoadingCalif(false)
+    }
+  }, [setValue, resetCalif])
+
+  function closeCalifModal() {
+    setModalCalif(null)
+    setExistingCalif(null)
+    resetCalif({ puntuacion: 5, comentario: '' })
+  }
 
   function onCalif(data) {
     calificarMut.mutate(
       { id: modalCalif.id, data: { puntuacion: parseInt(data.puntuacion), comentario: data.comentario } },
-      { onSuccess: () => { setModalCalif(null); resetCalif() } },
+      { onSuccess: () => closeCalifModal() },
     )
   }
 
@@ -61,6 +95,8 @@ export default function Proveedores() {
       eliminarMut.mutate(id)
     }
   }
+
+  const isEditMode = !!existingCalif
 
   return (
     <div>
@@ -144,7 +180,7 @@ export default function Proveedores() {
                     {(isAdmin() || isComprador()) && (
                       <button
                         title="Calificar"
-                        onClick={() => setModalCalif(p)}
+                        onClick={() => openCalifModal(p)}
                         className="p-1.5 rounded-lg text-yellow-500 hover:bg-yellow-50 transition-colors"
                       >
                         <Star size={15} />
@@ -199,37 +235,63 @@ export default function Proveedores() {
       </Modal>
 
       {/* Modal calificar */}
-      <Modal open={!!modalCalif} onClose={() => { setModalCalif(null); resetCalif() }} title={`Calificar: ${modalCalif?.nombre}`} size="sm">
-        <form onSubmit={hCalif(onCalif)} className="space-y-5">
-          {/* Stars selector */}
-          <div>
-            <label className="label">Puntuación</label>
-            <div className="flex items-center gap-1 mt-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <label key={n} className="cursor-pointer">
-                  <input type="radio" value={n} className="sr-only" {...rCalif('puntuacion', { required: true })} />
-                  <Star
-                    size={28}
-                    className={n <= puntActual ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}
-                  />
-                </label>
-              ))}
-              <span className="ml-2 text-sm font-semibold text-gray-700">{puntActual} / 5</span>
+      <Modal
+        open={!!modalCalif}
+        onClose={closeCalifModal}
+        title={isEditMode ? `Editar calificación: ${modalCalif?.nombre}` : `Calificar: ${modalCalif?.nombre}`}
+        size="sm"
+      >
+        {loadingCalif ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Loader2 size={28} className="animate-spin text-indigo-500" />
+            <p className="text-sm text-gray-400">Verificando calificación existente…</p>
+          </div>
+        ) : (
+          <form onSubmit={hCalif(onCalif)} className="space-y-5">
+            {/* Edit mode indicator */}
+            {isEditMode && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+                <Pencil size={14} className="text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-700">
+                  Ya calificaste este proveedor. Puedes modificar tu calificación.
+                </p>
+              </div>
+            )}
+
+            {/* Stars selector */}
+            <div>
+              <label className="label">Puntuación</label>
+              <div className="flex items-center gap-1 mt-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <label key={n} className="cursor-pointer">
+                    <input type="radio" value={n} className="sr-only" {...rCalif('puntuacion', { required: true })} />
+                    <Star
+                      size={28}
+                      className={`transition-colors ${n <= puntActual ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}`}
+                    />
+                  </label>
+                ))}
+                <span className="ml-2 text-sm font-semibold text-gray-700">{puntActual} / 5</span>
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="label">Comentario (opcional)</label>
-            <textarea
-              className="input-field"
-              rows={3}
-              placeholder="Escribe tu comentario sobre el proveedor..."
-              {...rCalif('comentario')}
-            />
-          </div>
-          <Button type="submit" loading={calificarMut.isPending} className="w-full">
-            Enviar calificación
-          </Button>
-        </form>
+            <div>
+              <label className="label">Comentario (opcional)</label>
+              <textarea
+                className="input-field"
+                rows={3}
+                placeholder="Escribe tu comentario sobre el proveedor..."
+                {...rCalif('comentario')}
+              />
+            </div>
+            <Button type="submit" loading={calificarMut.isPending} className="w-full">
+              {isEditMode ? (
+                <><Pencil size={14} className="mr-1.5" /> Actualizar calificación</>
+              ) : (
+                <><Star size={14} className="mr-1.5" /> Enviar calificación</>
+              )}
+            </Button>
+          </form>
+        )}
       </Modal>
     </div>
   )

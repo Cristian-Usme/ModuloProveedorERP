@@ -40,7 +40,10 @@ export function useCalificarProveedor() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }) => proveedorService.calificar(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['proveedores'] }); toast.success('Calificación registrada') },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['proveedores'] })
+      toast.success(data.actualizadoEn ? 'Calificación actualizada' : 'Calificación registrada')
+    },
     onError: (e) => toast.error(e.response?.data?.message ?? 'Error al calificar'),
   })
 }
