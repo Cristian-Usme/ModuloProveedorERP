@@ -5,7 +5,9 @@ import com.upb.gestionproveedores.auth.UserDetailsImpl;
 import com.upb.gestionproveedores.dto.request.LoginRequest;
 import com.upb.gestionproveedores.dto.request.RegisterRequest;
 import com.upb.gestionproveedores.dto.response.AuthResponse;
+import com.upb.gestionproveedores.dto.response.UserResponse;
 import com.upb.gestionproveedores.exception.BusinessException;
+import com.upb.gestionproveedores.exception.ResourceNotFoundException;
 import com.upb.gestionproveedores.model.Rol;
 import com.upb.gestionproveedores.model.Usuario;
 import com.upb.gestionproveedores.repository.RolRepository;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,15 +57,20 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public UserResponse register(RegisterRequest request) {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("El email ya está registrado: " + request.getEmail());
         }
 
-        Set<Rol> roles = new HashSet<>();
         Set<String> rolesReq = (request.getRoles() == null || request.getRoles().isEmpty())
             ? Set.of("CONSULTA") : request.getRoles();
 
+        // Bloquear creación de usuarios con rol ADMIN
+        if (rolesReq.stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN"))) {
+            throw new BusinessException("No se permite crear usuarios con rol ADMIN");
+        }
+
+        Set<Rol> roles = new HashSet<>();
         for (String rolNombre : rolesReq) {
             roles.add(rolRepository.findByNombre(rolNombre)
                 .orElseThrow(() -> new BusinessException("Rol no encontrado: " + rolNombre)));
@@ -76,9 +84,49 @@ public class AuthService {
             .build();
         usuarioRepository.save(usuario);
 
-        LoginRequest loginReq = new LoginRequest();
-        loginReq.setEmail(request.getEmail());
-        loginReq.setPassword(request.getPassword());
-        return login(loginReq);
+        return toUserResponse(usuario);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> listarUsuarios() {
+        return usuarioRepository.findAll().stream()
+            .map(this::toUserResponse)
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public UserResponse toggleActivoUsuario(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario", id));
+
+        // No permitir desactivar admins
+        boolean isAdmin = usuario.getRoles().stream()
+            .anyMatch(r -> r.getNombre().equalsIgnoreCase("ADMIN"));
+        if (isAdmin) {
+            throw new BusinessException("No se puede desactivar un usuario administrador");
+        }
+
+        usuario.setActivo(!usuario.getActivo());
+        usuarioRepository.save(usuario);
+
+        return toUserResponse(usuario);
+    }
+
+    private UserResponse toUserResponse(Usuario usuario) {
+        Set<String> roleNames = usuario.getRoles().stream()
+            .map(Rol::getNombre)
+            .collect(Collectors.toSet());
+
+        boolean isAdmin = roleNames.contains("ADMIN");
+
+        return UserResponse.builder()
+            .id(usuario.getId())
+            .nombre(usuario.getNombre())
+            .email(usuario.getEmail())
+            .roles(roleNames)
+            .activo(usuario.getActivo())
+            .editable(!isAdmin)
+            .creadoEn(usuario.getCreadoEn())
+            .build();
     }
 }
