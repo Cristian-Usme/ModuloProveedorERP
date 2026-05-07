@@ -14,4 +14,6 @@ public interface CalificacionProveedorRepository extends JpaRepository<Calificac
     Optional<Double> calcularPromedioByProveedorId(Long proveedorId);
 
     long countByProveedorId(Long proveedorId);
+
+    Optional<CalificacionProveedor> findByProveedorIdAndUsuarioId(Long proveedorId, Long usuarioId);
 }

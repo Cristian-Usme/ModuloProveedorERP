@@ -6,7 +6,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "calificaciones_proveedor")
+@Table(name = "calificaciones_proveedor",
+       uniqueConstraints = @UniqueConstraint(
+           name = "uq_calificacion_proveedor_usuario",
+           columnNames = {"proveedor_id", "usuario_id"}
+       ))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,4 +38,7 @@ public class CalificacionProveedor {
     @Column(name = "creado_en", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime creadoEn = LocalDateTime.now();
+
+    @Column(name = "actualizado_en")
+    private LocalDateTime actualizadoEn;
 }

@@ -2,6 +2,7 @@ package com.upb.gestionproveedores.controller;
 
 import com.upb.gestionproveedores.dto.request.CalificacionRequest;
 import com.upb.gestionproveedores.dto.request.ProveedorRequest;
+import com.upb.gestionproveedores.dto.response.CalificacionResponse;
 import com.upb.gestionproveedores.dto.response.ProveedorResponse;
 import com.upb.gestionproveedores.service.CalificacionService;
 import com.upb.gestionproveedores.service.ProveedorService;
@@ -63,10 +64,18 @@ public class ProveedorController {
 
     @PostMapping("/{id}/calificacion")
     @PreAuthorize("hasAnyRole('ADMIN', 'COMPRADOR')")
-    @Operation(summary = "Calificar proveedor 1-5")
-    public ResponseEntity<Void> calificar(
+    @Operation(summary = "Calificar proveedor 1-5 (crea o actualiza si ya existe)")
+    public ResponseEntity<CalificacionResponse> calificar(
             @PathVariable Long id, @Valid @RequestBody CalificacionRequest request) {
-        calificacionService.calificar(id, request);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(calificacionService.calificar(id, request));
+    }
+
+    @GetMapping("/{id}/calificacion/mi-calificacion")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COMPRADOR')")
+    @Operation(summary = "Obtener mi calificación para un proveedor")
+    public ResponseEntity<CalificacionResponse> miCalificacion(@PathVariable Long id) {
+        return calificacionService.obtenerCalificacionUsuario(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }
